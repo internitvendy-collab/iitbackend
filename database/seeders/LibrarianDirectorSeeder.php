@@ -10,6 +10,12 @@ class LibrarianDirectorSeeder extends Seeder
 {
     public function run(): void
     {
+        if (app()->environment('production')) {
+            $this->command?->warn('Skipping demo librarian/director accounts in production.');
+
+            return;
+        }
+
         $now = now();
 
         $users = [

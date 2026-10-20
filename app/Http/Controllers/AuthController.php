@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Contracts\Auth\PasswordBroker;
 
@@ -54,11 +55,27 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request): JsonResponse
     {
+        $email = strtolower(trim($request->string('email')->toString()));
+        $throttleKey = 'login-attempts:' . hash('sha256', $email);
+        $attempts = (int) Cache::get($throttleKey, 0);
+
+        if ($attempts >= 5) {
+            return ApiResponse::error(
+                'Too many failed login attempts. Please try again in 15 minutes.',
+                429,
+                ['retry_after' => 900],
+            );
+        }
+
         try {
-            $result = $this->auth->login($request->string('email')->toString(), $request->string('password')->toString());
+            $result = $this->auth->login($email, $request->string('password')->toString());
         } catch (ValidationException $exception) {
+            Cache::put($throttleKey, $attempts + 1, now()->addMinutes(15));
+
             return ApiResponse::error('Invalid credentials.', 401, $exception->errors());
         }
+
+        Cache::forget($throttleKey);
 
         return ApiResponse::success([
             'user' => $result['user'],

@@ -60,5 +60,16 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return ApiResponse::error($message, $status);
         });
+
+        // Never leak stack traces, SQL or environment details from API routes.
+        $exceptions->renderable(function (Throwable $exception, Request $request) {
+            if (!$request->is('api/*')) {
+                return null;
+            }
+
+            report($exception);
+
+            return ApiResponse::error('Something went wrong. Please try again later.', 500);
+        });
     })
     ->create();
