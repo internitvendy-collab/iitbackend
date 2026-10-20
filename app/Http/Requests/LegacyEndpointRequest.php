@@ -97,6 +97,29 @@ class LegacyEndpointRequest extends ApiFormRequest
             // Settings
             'v1/settings/update' => ['settings' => ['required', 'array']],
 
+            // Public notices
+            'v1/notices' => ['limit' => ['nullable', 'integer', 'min:1', 'max:50']],
+            'v1/notices/create' => [
+                'title' => ['required', 'string', 'max:200'],
+                'message' => ['required', 'string', 'max:2000'],
+                'type' => ['nullable', 'in:Info,Warning,Event,Maintenance'],
+                'is_published' => ['nullable', 'boolean'],
+                'is_pinned' => ['nullable', 'boolean'],
+                'audience' => ['nullable', 'in:All,Student,Teacher,Librarian,Director'],
+                'expires_at' => ['nullable', 'date'],
+            ],
+            'v1/notices/update' => [
+                'notice_id' => ['required', 'integer', 'min:1'],
+                'title' => ['nullable', 'string', 'max:200'],
+                'message' => ['nullable', 'string', 'max:2000'],
+                'type' => ['nullable', 'in:Info,Warning,Event,Maintenance'],
+                'is_published' => ['nullable', 'boolean'],
+                'is_pinned' => ['nullable', 'boolean'],
+                'audience' => ['nullable', 'in:All,Student,Teacher,Librarian,Director'],
+                'expires_at' => ['nullable', 'date'],
+            ],
+            'v1/notices/delete' => ['notice_id' => ['required', 'integer', 'min:1']],
+
             default => [],
         };
     }

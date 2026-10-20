@@ -5,6 +5,7 @@ use App\Http\Controllers\BookController;
 use App\Http\Controllers\BorrowController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\LibrarySettingsController;
+use App\Http\Controllers\NoticeController;
 use App\Http\Controllers\LibrarianController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReportController;
@@ -137,6 +138,17 @@ Route::prefix('v1')->group(function () {
     Route::get('/settings', [LibrarySettingsController::class, 'index']);
     Route::match(['POST', 'PUT'], '/settings/update', [LibrarySettingsController::class, 'update'])
         ->middleware(['api.token', 'role:Librarian,Director']);
+
+    // ------------------------------------------------------- Public notices
+    // Readable without a token: this powers the bell on the login screen.
+    Route::get('/notices', [NoticeController::class, 'index']);
+
+    Route::middleware(['api.token', 'role:Librarian,Director'])->group(function () {
+        Route::get('/notices/manage', [NoticeController::class, 'manage']);
+        Route::post('/notices/create', [NoticeController::class, 'store']);
+        Route::match(['POST', 'PUT'], '/notices/update', [NoticeController::class, 'update']);
+        Route::match(['POST', 'DELETE'], '/notices/delete', [NoticeController::class, 'destroy']);
+    });
 
     // Keep the wildcard book route last so it cannot shadow static paths.
     Route::get('/books/{book}', [BookController::class, 'show']);
