@@ -188,15 +188,42 @@ class AuthController extends Controller
 
     public function getNotifications(LegacyEndpointRequest $request): JsonResponse
     {
-        $query = DB::table('Notifications')->where('user_email', $request->user()->email);
-        $total = (clone $query)->count();
+        $email = $request->user()->email;
+        $base = DB::table('Notifications')->where('user_email', $email);
+
+        $total = (clone $base)->count();
+        $unread = (clone $base)
+            ->where(function ($query): void {
+                $query->where('is_read', false)->where('isRead', false);
+            })
+            ->count();
+
+        $query = $request->boolean('unread_only')
+            ? (clone $base)->where(function ($q): void {
+                $q->where('is_read', false)->where('isRead', false);
+            })
+            : (clone $base);
+
         $notifications = $query->orderByDesc('sent_at')
             ->limit(min(100, max(1, $request->integer('limit', 50))))
-            ->get(['notification_id', 'message', 'type', 'sent_at']);
+            ->get(['notification_id', 'message', 'type', 'action_url', 'is_read', 'isRead', 'sent_at'])
+            ->map(static function ($row): array {
+                $isRead = (bool) ($row->is_read ?? false) || (bool) ($row->isRead ?? false);
+
+                return [
+                    'notification_id' => (int) $row->notification_id,
+                    'message' => $row->message,
+                    'type' => $row->type,
+                    'action_url' => $row->action_url,
+                    'is_read' => $isRead,
+                    'sent_at' => $row->sent_at,
+                ];
+            })->values();
 
         return ApiResponse::success([
             'count' => $notifications->count(),
             'total_count' => $total,
+            'unread_count' => $unread,
             'notifications' => $notifications,
         ]);
     }
@@ -277,12 +304,12 @@ class AuthController extends Controller
     {
         $query = DB::table('Notifications')->where('user_email', $request->user()->email);
         if ($request->boolean('mark_all')) {
-            $query->update(['isRead' => true]);
+            $query->update(['isRead' => true, 'is_read' => true]);
             return ApiResponse::success([], 200, 'All notifications marked as read.');
         }
 
         $updated = $query->where('notification_id', $request->integer('notification_id'))
-            ->update(['isRead' => true]);
+            ->update(['isRead' => true, 'is_read' => true]);
         return $updated
             ? ApiResponse::success([], 200, 'Notification marked as read.')
             : ApiResponse::error('Notification not found.', 404);

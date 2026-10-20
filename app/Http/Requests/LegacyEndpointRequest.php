@@ -43,7 +43,7 @@ class LegacyEndpointRequest extends ApiFormRequest
             'v1/auth/password/reset', 'v1/auth/reset-password' => ['email' => ['required', 'email'], 'otp' => ['required', 'string'], 'new_password' => ['required', 'string', 'min:8']],
             'v1/auth/change-password' => ['email' => ['required', 'email'], 'current_password' => ['required', 'string'], 'new_password' => ['required', 'string', 'min:8'], 'confirm_password' => ['required', 'same:new_password']],
             'v1/auth/profile' => ['email' => ['required', 'email']],
-            'v1/auth/notifications' => ['email' => ['required', 'email'], 'limit' => ['nullable', 'integer', 'min:1']],
+            'v1/auth/notifications' => ['email' => ['required', 'email'], 'limit' => ['nullable', 'integer', 'min:1'], 'unread_only' => ['nullable', 'boolean']],
             'v1/auth/notifications/read' => ['user_email' => ['required', 'email'], 'notification_id' => ['required_without:mark_all', 'integer', 'min:1'], 'mark_all' => ['nullable', 'boolean']],
             'v1/auth/notifications/delete' => ['user_email' => ['required', 'email'], 'notification_id' => ['required', 'integer', 'min:1']],
             'v1/auth/image', 'v1/images' => ['path' => ['required', 'string']],
