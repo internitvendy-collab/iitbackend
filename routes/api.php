@@ -4,97 +4,138 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\BorrowController;
 use App\Http\Controllers\CourseController;
-use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\LibrarySettingsController;
 use App\Http\Controllers\LibrarianController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => response()->json(['message' => 'API Server Running']));
-Route::get('/books/get_books.php', [BookController::class, 'index']);
-Route::get('/books/get_categories.php', [BookController::class, 'categories']);
-Route::get('/books/get_book_copies.php', [BookController::class, 'copies'])->middleware('api.token');
-Route::match(['GET', 'POST'], '/books/get_book_courses.php', [BookController::class, 'courses'])->middleware('api.token');
-Route::get('/books/get_book_status.php', [BookController::class, 'status'])->middleware('api.token');
-Route::post('/books/add_book.php', [BookController::class, 'store'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::match(['POST', 'PUT'], '/books/update_book.php', [BookController::class, 'update'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::match(['POST', 'DELETE'], '/books/delete_book.php', [BookController::class, 'destroy'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::post('/books/upload_pdf.php', [BookController::class, 'uploadPdf'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::post('/books/upload_request_pdf.php', [BookController::class, 'uploadRequestPdf'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::post('/books/upload_cover_image.php', [BookController::class, 'uploadCoverImage'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::post('/books/update_book_image.php', [BookController::class, 'updateCoverImage'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::get('/books/download_pdf.php', [BookController::class, 'downloadPdf']);
-Route::post('/books/request_book.php', [BookController::class, 'requestAddition'])->middleware(['api.token', 'request.user']);
-Route::get('/books/get_request_details.php', [BookController::class, 'additionRequestDetails'])->middleware('api.token');
-Route::post('/books/update_addition_request.php', [BookController::class, 'updateAdditionRequest'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::post('/books/approve_request.php', [BookController::class, 'approveAdditionRequest'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::post('/books/decline_request.php', [BookController::class, 'declineAdditionRequest'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::post('/books/reserve_book.php', [BorrowController::class, 'reserve'])->middleware(['api.token', 'request.user']);
-Route::post('/books/cancel_reservation.php', [BorrowController::class, 'cancelReservation'])->middleware(['api.token', 'request.user']);
-Route::post('/borrow/request_borrow.php', [BorrowController::class, 'request'])->middleware(['api.token', 'request.user']);
-Route::post('/borrow/borrow_book.php', [BorrowController::class, 'request'])->middleware(['api.token', 'request.user']);
-Route::post('/borrow/request_return.php', [BorrowController::class, 'requestReturn'])->middleware(['api.token', 'request.user']);
-Route::post('/borrow/cancel_request.php', [BorrowController::class, 'cancelRequest'])->middleware(['api.token', 'request.user']);
-Route::post('/borrow/return_book.php', [BorrowController::class, 'returnBook'])->middleware(['api.token', 'request.user']);
-Route::post('/librarian/approve_borrow_request.php', [BorrowController::class, 'approveBorrowRequest'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::post('/librarian/reject_borrow_request.php', [BorrowController::class, 'rejectBorrowRequest'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::get('/librarian/get_available_copies.php', [BookController::class, 'availableCopies'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::post('/librarian/approve_return_request.php', [LibrarianController::class, 'approveReturnNotification'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::get('/librarian/dashboard_stats.php', [LibrarianController::class, 'dashboard'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::post('/librarian/import_preregistration.php', [LibrarianController::class, 'importPreRegistrations'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::post('/librarian/add_preregistration.php', [LibrarianController::class, 'addPreRegistration'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::get('/librarian/get_requests.php', [LibrarianController::class, 'requests'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::get('/librarian/get_transaction_history.php', [LibrarianController::class, 'transactionHistory'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::match(['GET', 'POST', 'PUT', 'DELETE'], '/librarian/manage_shelves.php', [LibrarianController::class, 'shelves'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::get('/librarian/test_requests_sync.php', [LibrarianController::class, 'syncStatus'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::match(['GET', 'POST'], '/books/get_user_reservations.php', [BorrowController::class, 'userReservations'])->middleware(['api.token', 'request.user']);
-Route::match(['GET', 'POST'], '/borrow/get_user_transactions.php', [BorrowController::class, 'userTransactions'])->middleware(['api.token', 'request.user']);
-Route::get('/courses/list_courses.php', [CourseController::class, 'index']);
-Route::get('/courses/search_courses.php', [CourseController::class, 'index']);
-Route::post('/courses/add_course.php', [CourseController::class, 'store'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::post('/courses/edit_course.php', [CourseController::class, 'update'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::post('/courses/delete_course.php', [CourseController::class, 'destroy'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::get('/payments/get_user_fines.php', [PaymentController::class, 'fines'])->middleware(['api.token', 'request.user']);
-Route::get('/payments/get_payment_history.php', [PaymentController::class, 'history'])->middleware(['api.token', 'request.user']);
-Route::get('/payments/get_payments.php', [PaymentController::class, 'history'])->middleware(['api.token', 'request.user']);
-Route::post('/payments/process_payment.php', [PaymentController::class, 'process'])->middleware(['api.token', 'request.user']);
-Route::get('/payments/check_overdue_books.php', [PaymentController::class, 'checkOverdueBooks'])->middleware(['api.token', 'request.user']);
-Route::post('/reports/generate_report.php', [ReportController::class, 'generate'])->middleware(['api.token', 'role:Librarian,Director']);
-Route::get('/settings/get_library_settings.php', [LibrarySettingsController::class, 'index']);
-Route::match(['POST', 'PUT'], '/settings/update_library_settings.php', [LibrarySettingsController::class, 'update'])->middleware(['api.token', 'role:Librarian,Director']);
+/*
+|--------------------------------------------------------------------------
+| API routes (v1 only)
+|--------------------------------------------------------------------------
+| Every endpoint lives under /api/v1. No legacy versionless routes remain.
+*/
 
 Route::prefix('v1')->group(function () {
+    Route::get('/', fn () => response()->json(['message' => 'API Server Running', 'version' => 'v1']));
+
+    // ---------------------------------------------------------------- Auth
     Route::post('/auth/login', [AuthController::class, 'login']);
     Route::post('/auth/register', [AuthController::class, 'sendRegistrationOtp']);
+    Route::post('/auth/register/otp', [AuthController::class, 'sendRegistrationOtp']);
+    Route::post('/auth/register/verify', [AuthController::class, 'verifyRegistrationOtp']);
+    Route::post('/auth/register/password', [AuthController::class, 'setRegistrationPassword']);
+    Route::post('/auth/password/otp', [AuthController::class, 'sendPasswordResetOtp']);
+    Route::post('/auth/password/verify', [AuthController::class, 'verifyPasswordResetOtp']);
+    Route::post('/auth/password/reset', [AuthController::class, 'resetPasswordWithOtp']);
     Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
+    Route::get('/auth/image', [AuthController::class, 'getImage']);
+    Route::get('/images', [AuthController::class, 'serveImage']);
+
     Route::middleware('api.token')->group(function () {
+        Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/auth/me', [AuthController::class, 'me']);
         Route::get('/auth/session', [AuthController::class, 'session']);
-        Route::post('/auth/logout', [AuthController::class, 'logout']);
-        Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
-        Route::post('/borrow/requests', [BorrowController::class, 'request'])->middleware('permission:borrow.request');
-    });
-    Route::get('/books', [BookController::class, 'index']);
-    Route::get('/books/{book}', [BookController::class, 'show']);
-});
 
-Route::post('/auth/login.php', [AuthController::class, 'login']);
-Route::post('/auth/register.php', [AuthController::class, 'sendRegistrationOtp']);
-Route::post('/auth/send_register_otp.php', [AuthController::class, 'sendRegistrationOtp']);
-Route::post('/auth/verify_email.php', [AuthController::class, 'verifyRegistrationOtp']);
-Route::post('/auth/set_password.php', [AuthController::class, 'setRegistrationPassword']);
-Route::post('/auth/send_reset_otp.php', [AuthController::class, 'sendPasswordResetOtp']);
-Route::post('/auth/verify_reset_otp.php', [AuthController::class, 'verifyPasswordResetOtp']);
-Route::post('/auth/reset_password.php', [AuthController::class, 'resetPasswordWithOtp']);
-Route::post('/auth/change_password.php', [AuthController::class, 'changePasswordLegacy'])->middleware(['api.token', 'request.user']);
-Route::match(['GET', 'POST'], '/auth/get_profile.php', [AuthController::class, 'getProfile'])->middleware(['api.token', 'request.user']);
-Route::match(['GET', 'POST'], '/auth/get_notifications.php', [AuthController::class, 'getNotifications'])->middleware(['api.token', 'request.user']);
-Route::post('/auth/update_profile.php', [AuthController::class, 'updateProfile'])->middleware(['api.token', 'request.user']);
-Route::post('/auth/mark_notification_read.php', [AuthController::class, 'markNotificationRead'])->middleware(['api.token', 'request.user']);
-Route::post('/auth/delete_notification.php', [AuthController::class, 'deleteNotification'])->middleware(['api.token', 'request.user']);
-Route::post('/auth/upload_profile_image.php', [AuthController::class, 'uploadProfileImage'])->middleware(['api.token', 'request.user']);
-Route::get('/auth/get_image.php', [AuthController::class, 'getImage']);
-Route::get('/serve_image.php', [AuthController::class, 'serveImage']);
-Route::match(['GET', 'POST'], '/auth/get_student_dashboard.php', [AuthController::class, 'studentDashboard'])->middleware(['api.token', 'request.user']);
-Route::match(['GET', 'POST'], '/auth/send_notifications.php', [AuthController::class, 'sendReminders'])->middleware(['api.token', 'role:Librarian,Director']);
+        Route::middleware('request.user')->group(function () {
+            Route::post('/auth/change-password', [AuthController::class, 'changePasswordLegacy']);
+            Route::match(['GET', 'POST'], '/auth/profile', [AuthController::class, 'getProfile']);
+            Route::match(['POST', 'PUT'], '/auth/profile/update', [AuthController::class, 'updateProfile']);
+            Route::post('/auth/profile/image', [AuthController::class, 'uploadProfileImage']);
+            Route::get('/auth/notifications', [AuthController::class, 'getNotifications']);
+            Route::post('/auth/notifications/read', [AuthController::class, 'markNotificationRead']);
+            Route::post('/auth/notifications/delete', [AuthController::class, 'deleteNotification']);
+            Route::get('/auth/dashboard', [AuthController::class, 'studentDashboard']);
+        });
+
+        Route::post('/auth/notifications/send', [AuthController::class, 'sendReminders'])
+            ->middleware('role:Librarian,Director');
+    });
+
+    // --------------------------------------------------------------- Books
+    Route::get('/books', [BookController::class, 'index']);
+    Route::get('/books/categories', [BookController::class, 'categories']);
+    Route::get('/books/copies', [BookController::class, 'copies'])->middleware('api.token');
+    Route::match(['GET', 'POST'], '/books/courses', [BookController::class, 'courses'])->middleware('api.token');
+    Route::get('/books/status', [BookController::class, 'status'])->middleware('api.token');
+    Route::get('/books/download', [BookController::class, 'downloadPdf']);
+    Route::get('/books/{book}', [BookController::class, 'show']);
+
+    Route::middleware(['api.token', 'role:Librarian,Director'])->group(function () {
+        Route::post('/books/create', [BookController::class, 'store']);
+        Route::match(['POST', 'PUT'], '/books/update', [BookController::class, 'update']);
+        Route::match(['POST', 'DELETE'], '/books/delete', [BookController::class, 'destroy']);
+        Route::post('/books/pdf', [BookController::class, 'uploadPdf']);
+        Route::post('/books/request-pdf', [BookController::class, 'uploadRequestPdf']);
+        Route::post('/books/cover', [BookController::class, 'uploadCoverImage']);
+        Route::post('/books/cover/update', [BookController::class, 'updateCoverImage']);
+        Route::get('/librarian/books/available-copies', [BookController::class, 'availableCopies']);
+        Route::post('/books/requests/update', [BookController::class, 'updateAdditionRequest']);
+        Route::post('/books/requests/approve', [BookController::class, 'approveAdditionRequest']);
+        Route::post('/books/requests/decline', [BookController::class, 'declineAdditionRequest']);
+    });
+
+    Route::get('/books/requests/details', [BookController::class, 'additionRequestDetails'])->middleware('api.token');
+
+    Route::post('/books/requests', [BookController::class, 'requestAddition'])
+        ->middleware(['api.token', 'request.user']);
+
+    // ---------------------------------------------------------- Reservations
+    Route::post('/reservations', [BorrowController::class, 'reserve'])
+        ->middleware(['api.token', 'request.user']);
+    Route::match(['POST', 'DELETE'], '/reservations/cancel', [BorrowController::class, 'cancelReservation'])
+        ->middleware(['api.token', 'request.user']);
+    Route::match(['GET', 'POST'], '/reservations/list', [BorrowController::class, 'userReservations'])
+        ->middleware(['api.token', 'request.user']);
+
+    // -------------------------------------------------------------- Borrow
+    Route::middleware(['api.token', 'request.user'])->group(function () {
+        Route::post('/borrow/requests', [BorrowController::class, 'request']);
+        Route::post('/borrow/returns', [BorrowController::class, 'requestReturn']);
+        Route::post('/borrow/returns/complete', [BorrowController::class, 'returnBook']);
+        Route::match(['POST', 'DELETE'], '/borrow/requests/cancel', [BorrowController::class, 'cancelRequest']);
+        Route::match(['GET', 'POST'], '/borrow/transactions', [BorrowController::class, 'userTransactions']);
+    });
+
+    // ----------------------------------------------------------- Librarian
+    Route::middleware(['api.token', 'role:Librarian,Director'])->group(function () {
+        Route::post('/librarian/borrow-requests/approve', [BorrowController::class, 'approveBorrowRequest']);
+        Route::post('/librarian/borrow-requests/reject', [BorrowController::class, 'rejectBorrowRequest']);
+        Route::post('/librarian/return-requests/approve', [LibrarianController::class, 'approveReturnNotification']);
+        Route::get('/librarian/dashboard', [LibrarianController::class, 'dashboard']);
+        Route::get('/librarian/requests', [LibrarianController::class, 'requests']);
+        Route::get('/librarian/requests/sync', [LibrarianController::class, 'syncStatus']);
+        Route::get('/librarian/transactions', [LibrarianController::class, 'transactionHistory']);
+        Route::match(['GET', 'POST', 'PUT', 'DELETE'], '/librarian/shelves', [LibrarianController::class, 'shelves']);
+        Route::post('/librarian/preregistrations', [LibrarianController::class, 'addPreRegistration']);
+        Route::post('/librarian/preregistrations/import', [LibrarianController::class, 'importPreRegistrations']);
+    });
+
+    // ------------------------------------------------------------- Courses
+    Route::get('/courses', [CourseController::class, 'index']);
+    Route::get('/courses/search', [CourseController::class, 'index']);
+    Route::middleware(['api.token', 'role:Librarian,Director'])->group(function () {
+        Route::post('/courses/create', [CourseController::class, 'store']);
+        Route::match(['POST', 'PUT'], '/courses/update', [CourseController::class, 'update']);
+        Route::match(['POST', 'DELETE'], '/courses/delete', [CourseController::class, 'destroy']);
+    });
+
+    // ------------------------------------------------------------ Payments
+    Route::middleware(['api.token', 'request.user'])->group(function () {
+        Route::get('/payments/fines', [PaymentController::class, 'fines']);
+        Route::match(['GET', 'POST'], '/payments/history', [PaymentController::class, 'history']);
+        Route::post('/payments/process', [PaymentController::class, 'process']);
+        Route::match(['GET', 'POST'], '/payments/overdue', [PaymentController::class, 'checkOverdueBooks']);
+    });
+
+    // ------------------------------------------------------------- Reports
+    Route::post('/reports/generate', [ReportController::class, 'generate'])
+        ->middleware(['api.token', 'role:Librarian,Director']);
+
+    // ------------------------------------------------------------ Settings
+    Route::get('/settings', [LibrarySettingsController::class, 'index']);
+    Route::match(['POST', 'PUT'], '/settings/update', [LibrarySettingsController::class, 'update'])
+        ->middleware(['api.token', 'role:Librarian,Director']);
+});
