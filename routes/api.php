@@ -147,7 +147,6 @@ Route::prefix('v1')->group(function () {
         Route::get('/notices/manage', [NoticeController::class, 'manage']);
         Route::post('/notices/create', [NoticeController::class, 'store']);
         Route::match(['POST', 'PUT'], '/notices/update', [NoticeController::class, 'update']);
-        Route::match(['POST', 'DELETE'], '/notices/delete', [NoticeController::class, 'destroy']);
     });
 
     // Keep the wildcard book route last so it cannot shadow static paths.

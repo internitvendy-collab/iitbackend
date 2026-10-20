@@ -106,7 +106,6 @@ class LegacyEndpointRequest extends ApiFormRequest
                 'is_published' => ['nullable', 'boolean'],
                 'is_pinned' => ['nullable', 'boolean'],
                 'audience' => ['nullable', 'in:All,Student,Teacher,Librarian,Director'],
-                'expires_at' => ['nullable', 'date'],
             ],
             'v1/notices/update' => [
                 'notice_id' => ['required', 'integer', 'min:1'],
@@ -116,9 +115,7 @@ class LegacyEndpointRequest extends ApiFormRequest
                 'is_published' => ['nullable', 'boolean'],
                 'is_pinned' => ['nullable', 'boolean'],
                 'audience' => ['nullable', 'in:All,Student,Teacher,Librarian,Director'],
-                'expires_at' => ['nullable', 'date'],
             ],
-            'v1/notices/delete' => ['notice_id' => ['required', 'integer', 'min:1']],
 
             default => [],
         };

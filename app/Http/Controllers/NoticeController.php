@@ -28,7 +28,7 @@ class NoticeController extends Controller
             ->limit($limit)
             ->get([
                 'notice_id', 'title', 'message', 'type', 'is_pinned',
-                'audience', 'published_at', 'expires_at',
+                'audience', 'published_at',
             ])
             ->map(static fn ($row): array => [
                 'notice_id' => (int) $row->notice_id,
@@ -38,7 +38,6 @@ class NoticeController extends Controller
                 'is_pinned' => (bool) $row->is_pinned,
                 'audience' => $row->audience,
                 'published_at' => $row->published_at,
-                'expires_at' => $row->expires_at,
             ])
             ->values();
 
@@ -59,7 +58,6 @@ class NoticeController extends Controller
             'is_pinned' => $request->boolean('is_pinned'),
             'audience' => $request->string('audience')->toString() ?: 'All',
             'published_at' => now(),
-            'expires_at' => $request->date('expires_at'),
             'created_by' => $request->user()?->email,
         ]);
 
@@ -89,9 +87,6 @@ class NoticeController extends Controller
         if ($request->exists('is_pinned')) {
             $updates['is_pinned'] = $request->boolean('is_pinned');
         }
-        if ($request->exists('expires_at')) {
-            $updates['expires_at'] = $request->date('expires_at');
-        }
 
         if ($updates === []) {
             return ApiResponse::error('No fields to update.', 400);
@@ -100,17 +95,6 @@ class NoticeController extends Controller
         DB::table('Notices')->where('notice_id', $id)->update($updates);
 
         return ApiResponse::success([], 200, 'Notice updated successfully.');
-    }
-
-    public function destroy(LegacyEndpointRequest $request): JsonResponse
-    {
-        $deleted = DB::table('Notices')
-            ->where('notice_id', $request->integer('notice_id'))
-            ->delete();
-
-        return $deleted
-            ? ApiResponse::success([], 200, 'Notice deleted successfully.')
-            : ApiResponse::error('Notice not found.', 404);
     }
 
     /**
@@ -124,7 +108,7 @@ class NoticeController extends Controller
             ->limit(100)
             ->get([
                 'notice_id', 'title', 'message', 'type', 'is_published',
-                'is_pinned', 'audience', 'published_at', 'expires_at', 'created_by',
+                'is_pinned', 'audience', 'published_at', 'created_by',
             ]);
 
         return ApiResponse::success([
@@ -137,10 +121,7 @@ class NoticeController extends Controller
     {
         return DB::table('Notices')
             ->where('is_published', true)
-            ->where('published_at', '<=', now())
-            ->where(function ($query): void {
-                $query->whereNull('expires_at')->orWhere('expires_at', '>', now());
-            });
+            ->where('published_at', '<=', now());
     }
 
     private function normalizeType(string $type): string
