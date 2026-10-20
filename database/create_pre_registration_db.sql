@@ -1,0 +1,2 @@
+-- Deprecated: pre-registration now uses tables in the main iit_shelf database.
+-- Run `php artisan migrate` from the Laravel project root to create the tables.

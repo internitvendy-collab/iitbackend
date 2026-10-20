@@ -1,0 +1,30 @@
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+config/*.local.php
+
+# Runtime logs and temporary files
+*.log
+tmp/
+temp/
+
+# Laravel runtime/cache files
+storage/*.key
+storage/pail
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/testing/*
+storage/framework/views/*
+storage/logs/*
+public/storage
+
+# User-uploaded/generated files
+uploads/*
+!uploads/.gitkeep
+
+# Dependencies and generated artifacts
+vendor/
+.phpunit.result.cache
+.phpunit.cache/
+.DS_Store

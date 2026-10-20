@@ -1,0 +1,2 @@
+-- Deprecated: use the Laravel registration-support migration instead.
+-- This legacy script intentionally inserts no sample or personal records.
