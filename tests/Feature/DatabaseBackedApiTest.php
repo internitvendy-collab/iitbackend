@@ -92,16 +92,16 @@ class DatabaseBackedApiTest extends TestCase
         ]);
 
         try {
-            $send = $this->postJson('/api/auth/send_register_otp.php', ['email' => $email]);
+            $send = $this->postJson('/api/v1/auth/register/otp', ['email' => $email]);
             $send->assertOk()->assertJsonPath('success', true)->assertJsonPath('role', 'Student');
             $otp = DB::table('Temp_User_Verification')->where('email', $email)->where('purpose', 'EmailVerification')->value('otp_code');
             $this->assertNotEmpty($otp);
 
-            $this->postJson('/api/auth/verify_email.php', ['email' => $email, 'otp' => $otp])
+            $this->postJson('/api/v1/auth/register/verify', ['email' => $email, 'otp' => $otp])
                 ->assertOk()->assertJsonPath('success', true);
-            $this->postJson('/api/auth/set_password.php', ['email' => $email, 'new_password' => 'MigrationPass123!'])
+            $this->postJson('/api/v1/auth/register/password', ['email' => $email, 'new_password' => 'MigrationPass123!'])
                 ->assertOk()->assertJsonPath('success', true);
-            $this->postJson('/api/auth/login.php', ['email' => $email, 'password' => 'MigrationPass123!'])
+            $this->postJson('/api/v1/auth/login', ['email' => $email, 'password' => 'MigrationPass123!'])
                 ->assertOk()->assertJsonPath('success', true)->assertJsonPath('role', 'Student');
         } finally {
             Cache::store()->forget('auth-workflow:registration:' . hash('sha256', $email));
@@ -116,10 +116,10 @@ class DatabaseBackedApiTest extends TestCase
 
         try {
             $this->withHeader('Authorization', 'Bearer ' . $token)
-                ->putJson('/api/settings/update_library_settings.php', ['settings' => ['library_phone' => 'TEST-000']])
+                ->putJson('/api/v1/settings/update', ['settings' => ['library_phone' => 'TEST-000']])
                 ->assertOk()->assertJsonPath('success', true);
             $this->withHeader('Authorization', 'Bearer ' . $token)
-                ->getJson('/api/settings/get_library_settings.php')
+                ->getJson('/api/v1/settings')
                 ->assertOk()->assertJsonPath('settings.library_phone', 'TEST-000');
         } finally {
             app(ApiTokenService::class)->revokeAll($user);
@@ -133,7 +133,7 @@ class DatabaseBackedApiTest extends TestCase
         try {
             foreach (['most_borrowed', 'most_requested', 'semester_wise', 'session_wise'] as $reportType) {
                 $this->withHeader('Authorization', 'Bearer ' . $token)
-                    ->postJson('/api/reports/generate_report.php', ['report_type' => $reportType, 'format' => 'json'])
+                    ->postJson('/api/v1/reports/generate', ['report_type' => $reportType, 'format' => 'json'])
                     ->assertOk()->assertJsonPath('success', true)->assertJsonPath('report_type', $reportType);
             }
         } finally {
@@ -154,11 +154,11 @@ class DatabaseBackedApiTest extends TestCase
 
         try {
             $this->withHeader('Authorization', 'Bearer ' . $token)
-                ->getJson('/api/payments/get_user_fines.php?user_email=' . urlencode($user->email))
+                ->getJson('/api/v1/payments/fines?user_email=' . urlencode($user->email))
                 ->assertOk()->assertJsonPath('success', true)->assertJsonPath('fines.0.fine_id', $fineId);
 
             $this->withHeader('Authorization', 'Bearer ' . $token)
-                ->postJson('/api/payments/process_payment.php', [
+                ->postJson('/api/v1/payments/process', [
                     'user_email' => $user->email,
                     'fine_ids' => [$fineId],
                     'transaction_ids' => [],
@@ -179,7 +179,7 @@ class DatabaseBackedApiTest extends TestCase
         $token = app(ApiTokenService::class)->issue($user);
 
         $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->getJson('/api/librarian/dashboard_stats.php')
+            ->getJson('/api/v1/librarian/dashboard')
             ->assertForbidden()
             ->assertJsonPath('success', false);
     }

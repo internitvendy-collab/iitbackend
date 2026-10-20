@@ -8,6 +8,8 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -18,9 +20,6 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->append(App\Http\Middleware\RequestLoggingMiddleware::class);
-        $middleware->api(prepend: [
-            App\Http\Middleware\CorsMiddleware::class,
-        ]);
         $middleware->alias([
             'api.token' => App\Http\Middleware\ApiTokenMiddleware::class,
             'role' => App\Http\Middleware\RoleMiddleware::class,
@@ -45,6 +44,21 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->expectsJson()) {
                 return ApiResponse::error('Forbidden.', 403);
             }
+        });
+
+        $exceptions->renderable(function (HttpExceptionInterface $exception, Request $request) {
+            if (!$request->is('api/*')) {
+                return null;
+            }
+
+            $status = $exception->getStatusCode();
+            $message = $exception->getMessage();
+
+            if ($message === '' || $message === null) {
+                $message = Response::$statusTexts[$status] ?? 'Request failed.';
+            }
+
+            return ApiResponse::error($message, $status);
         });
     })
     ->create();

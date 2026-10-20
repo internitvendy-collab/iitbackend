@@ -21,16 +21,16 @@ Route::prefix('v1')->group(function () {
     Route::get('/', fn () => response()->json(['message' => 'API Server Running', 'version' => 'v1']));
 
     // ---------------------------------------------------------------- Auth
-    Route::post('/auth/login', [AuthController::class, 'login']);
-    Route::post('/auth/register', [AuthController::class, 'sendRegistrationOtp']);
-    Route::post('/auth/register/otp', [AuthController::class, 'sendRegistrationOtp']);
-    Route::post('/auth/register/verify', [AuthController::class, 'verifyRegistrationOtp']);
-    Route::post('/auth/register/password', [AuthController::class, 'setRegistrationPassword']);
-    Route::post('/auth/password/otp', [AuthController::class, 'sendPasswordResetOtp']);
-    Route::post('/auth/password/verify', [AuthController::class, 'verifyPasswordResetOtp']);
-    Route::post('/auth/password/reset', [AuthController::class, 'resetPasswordWithOtp']);
-    Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
-    Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
+    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+    Route::post('/auth/register', [AuthController::class, 'sendRegistrationOtp'])->middleware('throttle:5,1');
+    Route::post('/auth/register/otp', [AuthController::class, 'sendRegistrationOtp'])->middleware('throttle:5,1');
+    Route::post('/auth/register/verify', [AuthController::class, 'verifyRegistrationOtp'])->middleware('throttle:10,1');
+    Route::post('/auth/register/password', [AuthController::class, 'setRegistrationPassword'])->middleware('throttle:10,1');
+    Route::post('/auth/password/otp', [AuthController::class, 'sendPasswordResetOtp'])->middleware('throttle:5,1');
+    Route::post('/auth/password/verify', [AuthController::class, 'verifyPasswordResetOtp'])->middleware('throttle:10,1');
+    Route::post('/auth/password/reset', [AuthController::class, 'resetPasswordWithOtp'])->middleware('throttle:10,1');
+    Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
+    Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:10,1');
     Route::get('/auth/image', [AuthController::class, 'getImage']);
     Route::get('/images', [AuthController::class, 'serveImage']);
 
@@ -61,7 +61,6 @@ Route::prefix('v1')->group(function () {
     Route::match(['GET', 'POST'], '/books/courses', [BookController::class, 'courses'])->middleware('api.token');
     Route::get('/books/status', [BookController::class, 'status'])->middleware('api.token');
     Route::get('/books/download', [BookController::class, 'downloadPdf']);
-    Route::get('/books/{book}', [BookController::class, 'show']);
 
     Route::middleware(['api.token', 'role:Librarian,Director'])->group(function () {
         Route::post('/books/create', [BookController::class, 'store']);
@@ -138,4 +137,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/settings', [LibrarySettingsController::class, 'index']);
     Route::match(['POST', 'PUT'], '/settings/update', [LibrarySettingsController::class, 'update'])
         ->middleware(['api.token', 'role:Librarian,Director']);
+
+    // Keep the wildcard book route last so it cannot shadow static paths.
+    Route::get('/books/{book}', [BookController::class, 'show']);
 });

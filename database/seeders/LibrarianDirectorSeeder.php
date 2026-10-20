@@ -34,13 +34,16 @@ class LibrarianDirectorSeeder extends Seeder
         ];
 
         foreach ($users as $data) {
-            $user = User::where('email', $data['email'])->first();
+            $user = User::query()->where('email', $data['email'])->first();
 
-            if (!$user) {
-                $user = new User();
-                $user->forceFill($data);
-                $user->save();
+            if ($user) {
+                // Keep an existing password so re-seeding never resets credentials.
+                unset($data['password_hash']);
+                $user->forceFill($data)->save();
+                continue;
             }
+
+            (new User())->forceFill($data)->save();
         }
     }
 }
