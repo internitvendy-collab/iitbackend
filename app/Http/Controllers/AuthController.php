@@ -120,7 +120,7 @@ class AuthController extends Controller
         $data['phone'] = $user->contact ?: 'Not provided';
         $data['contact'] = $user->contact ?: '';
         $data['profile_image'] = $user->profile_image
-            ? '/api/auth/get_image.php?path=' . urlencode($user->profile_image)
+            ? '/api/v1/auth/image?path=' . urlencode($user->profile_image)
             : null;
 
         if ($user->role === 'Student') {
@@ -310,7 +310,7 @@ class AuthController extends Controller
         $request->user()->forceFill(['profile_image' => $path])->save();
 
         return ApiResponse::success([
-            'image_url' => '/api/auth/get_image.php?path=' . urlencode($path),
+            'image_url' => '/api/v1/auth/image?path=' . urlencode($path),
         ], 200, 'Profile image uploaded successfully.');
     }
 

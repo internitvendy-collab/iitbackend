@@ -404,7 +404,7 @@ class BookController extends Controller
         if (!$path) return ApiResponse::error('Failed to save image.', 500);
         $book->forceFill(['pic_path' => $path])->save();
         return ApiResponse::success([
-            'image_url' => url('/api/serve_image.php?path=' . urlencode($path)),
+            'image_url' => url('/api/v1/images?path=' . urlencode($path)),
         ], 200, 'Book cover updated successfully.');
     }
 

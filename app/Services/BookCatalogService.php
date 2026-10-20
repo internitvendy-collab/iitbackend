@@ -80,7 +80,7 @@ class BookCatalogService
                     'course_ids' => array_column($courses, 'course_id'),
                     'courses' => $courses,
                     'semesters' => $semesters,
-                    'pdf_url' => $pdf ? url('/api/books/download_pdf.php?isbn=' . urlencode($book->isbn)) : null,
+                    'pdf_url' => $pdf ? url('/api/v1/books/download?isbn=' . urlencode($book->isbn)) : null,
                 ];
             })
             ->values();
