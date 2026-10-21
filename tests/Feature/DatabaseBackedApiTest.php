@@ -315,6 +315,59 @@ class DatabaseBackedApiTest extends TestCase
             ->assertJsonStructure(['request_id']);
     }
 
+    public function test_a_removed_shelf_can_be_added_again_with_the_same_number(): void
+    {
+        if (!Schema::hasTable('Shelves')) {
+            $this->markTestSkipped('Shelves table is not available.');
+        }
+
+        $user = $this->createUser(
+            'shelf-test-' . bin2hex(random_bytes(4)) . '@example.test',
+            'Librarian',
+        );
+        $token = app(ApiTokenService::class)->issue($user);
+
+        $shelfId = 900 + random_int(1, 99);
+        $payload = ['shelf_id' => $shelfId, 'compartment' => 2, 'subcompartment' => 3];
+
+        try {
+            $this->withHeader('Authorization', 'Bearer ' . $token)
+                ->postJson('/api/v1/librarian/shelves', $payload)
+                ->assertOk()
+                ->assertJsonPath('success', true)
+                ->assertJsonPath('shelf_id', $shelfId);
+
+            $this->withHeader('Authorization', 'Bearer ' . $token)
+                ->deleteJson('/api/v1/librarian/shelves', $payload)
+                ->assertOk()
+                ->assertJsonPath('success', true);
+
+            $this->withHeader('Authorization', 'Bearer ' . $token)
+                ->getJson('/api/v1/librarian/shelves')
+                ->assertOk()
+                ->assertJsonMissing(['shelf_id' => $shelfId]);
+
+            $this->withHeader('Authorization', 'Bearer ' . $token)
+                ->postJson('/api/v1/librarian/shelves', $payload)
+                ->assertOk()
+                ->assertJsonPath('success', true)
+                ->assertJsonPath('shelf_id', $shelfId);
+
+            $this->withHeader('Authorization', 'Bearer ' . $token)
+                ->postJson('/api/v1/librarian/shelves', $payload)
+                ->assertStatus(400)
+                ->assertJsonPath('success', false);
+
+            $this->assertSame(
+                1,
+                DB::table('Shelves')->where('shelf_id', $shelfId)->where('is_deleted', false)->count(),
+            );
+        } finally {
+            DB::table('Shelves')->where('shelf_id', $shelfId)->delete();
+            app(ApiTokenService::class)->revokeAll($user);
+        }
+    }
+
     private function createUser(string $email, string $role): User
     {
         $user = new User();
