@@ -171,17 +171,17 @@ class AuthWorkflowService
 
     private function findPreregestredIdentity(string $email): ?array
     {
-        $student = DB::table('PreReg_Students')->where('email', $email)->first();
+        $student = DB::table('prereg_students')->where('email', $email)->first();
         if ($student) {
             return ['role' => 'Student', 'info' => (array) $student];
         }
 
-        $teacher = DB::table('PreReg_Teachers')->where('email', $email)->first();
+        $teacher = DB::table('prereg_teachers')->where('email', $email)->first();
         if ($teacher) {
             return ['role' => 'Teacher', 'info' => (array) $teacher];
         }
 
-        foreach (['PreReg_Librarians' => 'Librarian', 'PreReg_Directors' => 'Director'] as $table => $role) {
+        foreach (['prereg_librarians' => 'Librarian', 'prereg_directors' => 'Director'] as $table => $role) {
             $row = DB::table($table)->where('email', $email)->first();
             if ($row) {
                 return ['role' => $role, 'info' => (array) $row];

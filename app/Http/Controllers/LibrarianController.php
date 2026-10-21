@@ -105,10 +105,10 @@ class LibrarianController extends Controller
         $file = $request->file('file');
         $role = ucfirst(strtolower(trim((string) $request->input('role'))));
         $tableByRole = [
-            'Student' => 'PreReg_Students',
-            'Teacher' => 'PreReg_Teachers',
-            'Librarian' => 'PreReg_Librarians',
-            'Director' => 'PreReg_Directors',
+            'Student' => 'prereg_students',
+            'Teacher' => 'prereg_teachers',
+            'Librarian' => 'prereg_librarians',
+            'Director' => 'prereg_directors',
         ];
 
         if (!$file || !$file->isValid()) return ApiResponse::error('Please upload a valid CSV file.', 422);
@@ -171,10 +171,10 @@ class LibrarianController extends Controller
     {
         $role = ucfirst(strtolower(trim((string) $request->input('role'))));
         $tableByRole = [
-            'Student' => 'PreReg_Students',
-            'Teacher' => 'PreReg_Teachers',
-            'Librarian' => 'PreReg_Librarians',
-            'Director' => 'PreReg_Directors',
+            'Student' => 'prereg_students',
+            'Teacher' => 'prereg_teachers',
+            'Librarian' => 'prereg_librarians',
+            'Director' => 'prereg_directors',
         ];
         if (!isset($tableByRole[$role])) return ApiResponse::error('Select a valid pre-registration role.', 422);
 
