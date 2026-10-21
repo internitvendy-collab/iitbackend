@@ -141,6 +141,71 @@ class DatabaseBackedApiTest extends TestCase
         }
     }
 
+    public function test_report_pdf_export_returns_a_pdf_document(): void
+    {
+        $user = $this->createUser('pdf-report-test-' . bin2hex(random_bytes(4)) . '@example.test', 'Librarian');
+        $token = app(ApiTokenService::class)->issue($user);
+        $isbn = 'PDF-' . strtoupper(bin2hex(random_bytes(4)));
+        $copyId = 'PDF-COPY-' . strtoupper(bin2hex(random_bytes(4)));
+
+        DB::table('Books')->insert([
+            'isbn' => $isbn,
+            'title' => 'PDF export test',
+            'author' => 'Test Author',
+            'category' => 'Test',
+        ]);
+        DB::table('Book_Copies')->insert([
+            'copy_id' => $copyId,
+            'isbn' => $isbn,
+            'status' => 'Borrowed',
+        ]);
+        $requestId = DB::table('Transaction_Requests')->insertGetId([
+            'isbn' => $isbn,
+            'requester_email' => $user->email,
+            'status' => 'Approved',
+        ]);
+        DB::table('Approved_Transactions')->insert([
+            'request_id' => $requestId,
+            'isbn' => $isbn,
+            'copy_id' => $copyId,
+            'due_date' => now()->addDays(7),
+        ]);
+
+        try {
+            $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+                ->postJson('/api/v1/reports/generate', [
+                    'report_type' => 'most_borrowed',
+                    'format' => 'pdf',
+                ]);
+
+            $response->assertOk();
+            $this->assertStringContainsString('application/pdf', $response->headers->get('Content-Type', ''));
+            $this->assertStringStartsWith('%PDF-', $response->getContent());
+        } finally {
+            app(ApiTokenService::class)->revokeAll($user);
+        }
+    }
+
+    public function test_empty_report_pdf_export_returns_a_pdf_document(): void
+    {
+        $user = $this->createUser('empty-pdf-report-test-' . bin2hex(random_bytes(4)) . '@example.test', 'Librarian');
+        $token = app(ApiTokenService::class)->issue($user);
+
+        try {
+            $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+                ->postJson('/api/v1/reports/generate', [
+                    'report_type' => 'most_borrowed',
+                    'format' => 'pdf',
+                ]);
+
+            $response->assertOk();
+            $this->assertStringContainsString('application/pdf', $response->headers->get('Content-Type', ''));
+            $this->assertStringStartsWith('%PDF-', $response->getContent());
+        } finally {
+            app(ApiTokenService::class)->revokeAll($user);
+        }
+    }
+
     public function test_payment_read_and_processing_match_live_payment_schema(): void
     {
         $user = $this->createUser('payment-test-' . bin2hex(random_bytes(4)) . '@example.test', 'Student');

@@ -50,15 +50,19 @@ class ReportController extends Controller
             $pdf->AddPage();
             $html = '<h2>' . htmlspecialchars(ucwords(str_replace('_', ' ', $type)), ENT_QUOTES, 'UTF-8') . ' Report</h2>';
             if ($start && $end) $html .= '<p>Period: ' . htmlspecialchars($start . ' to ' . $end, ENT_QUOTES, 'UTF-8') . '</p>';
-            $html .= '<table border="1" cellpadding="4"><thead><tr>';
-            foreach (array_keys((array) ($rows[0] ?? [])) as $key) $html .= '<th>' . htmlspecialchars(ucwords(str_replace('_', ' ', $key)), ENT_QUOTES, 'UTF-8') . '</th>';
-            $html .= '</tr></thead><tbody>';
-            foreach ($rows as $row) {
-                $html .= '<tr>';
-                foreach ((array) $row as $value) $html .= '<td>' . htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8') . '</td>';
-                $html .= '</tr>';
+            if ($rows === []) {
+                $html .= '<p>No data available for the selected criteria.</p>';
+            } else {
+                $html .= '<table border="1" cellpadding="4"><thead><tr>';
+                foreach (array_keys((array) $rows[0]) as $key) $html .= '<th>' . htmlspecialchars(ucwords(str_replace('_', ' ', $key)), ENT_QUOTES, 'UTF-8') . '</th>';
+                $html .= '</tr></thead><tbody>';
+                foreach ($rows as $row) {
+                    $html .= '<tr>';
+                    foreach ((array) $row as $value) $html .= '<td>' . htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8') . '</td>';
+                    $html .= '</tr>';
+                }
+                $html .= '</tbody></table>';
             }
-            $html .= '</tbody></table>';
             $pdf->writeHTML($html, true, false, true, false, '');
             return response($pdf->Output($type . '.pdf', 'S'), 200, [
                 'Content-Type' => 'application/pdf',
