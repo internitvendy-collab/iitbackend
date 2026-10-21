@@ -28,7 +28,10 @@ class AuthWorkflowService
             return $this->error("Please wait {$issue['wait']}s before requesting another code.", 429, ['retry_after' => $issue['wait']]);
         }
 
-        $this->sendOtpMail($email, $issue['otp'], 'Verify Your IIT Shelf Account');
+        if (!$this->sendOtpMail($email, $issue['otp'], 'Verify Your IIT Shelf Account')) {
+            $this->deleteOtp($email, 'EmailVerification');
+            return $this->error('Unable to send the verification email. Please try again later.', 503);
+        }
 
         return [
             'status' => 200,
@@ -123,7 +126,10 @@ class AuthWorkflowService
             return $this->error("Please retry after {$issue['wait']} seconds.", 429, ['retry_after' => $issue['wait']]);
         }
 
-        $this->sendOtpMail($email, $issue['otp'], 'Reset Your IIT Shelf Password');
+        if (!$this->sendOtpMail($email, $issue['otp'], 'Reset Your IIT Shelf Password')) {
+            $this->deleteOtp($email, 'PasswordReset');
+            return $this->error('Unable to send a reset code right now. Please try again later.', 503);
+        }
 
         return ['status' => 200, 'payload' => ['success' => true, 'message' => 'Password reset code sent to your email.']];
     }
@@ -266,14 +272,16 @@ class AuthWorkflowService
         $this->verificationCache()->forget($this->attemptKey($email, $purpose));
     }
 
-    private function sendOtpMail(string $email, string $otp, string $subject): void
+    private function sendOtpMail(string $email, string $otp, string $subject): bool
     {
         try {
             Mail::raw("Your IIT Shelf verification code is {$otp}. It expires in 5 minutes.", function ($message) use ($email, $subject): void {
                 $message->to($email)->subject($subject);
             });
+            return true;
         } catch (\Throwable $exception) {
             Log::warning('Unable to send OTP email.', ['email' => $email, 'error' => $exception->getMessage()]);
+            return false;
         }
     }
 
