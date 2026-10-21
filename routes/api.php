@@ -49,6 +49,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/auth/notifications/read', [AuthController::class, 'markNotificationRead']);
             Route::post('/auth/notifications/delete', [AuthController::class, 'deleteNotification']);
             Route::get('/auth/dashboard', [AuthController::class, 'studentDashboard']);
+            Route::get('/librarians/contact', [LibrarySettingsController::class, 'librarians']);
         });
 
         Route::post('/auth/notifications/send', [AuthController::class, 'sendReminders'])

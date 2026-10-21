@@ -18,6 +18,20 @@ class LibrarySettingsController extends Controller
         return ApiResponse::success(['settings' => $settings]);
     }
 
+    public function librarians(): JsonResponse
+    {
+        $librarians = DB::table('Users')
+            ->whereRaw('LOWER(role) = ?', ['librarian'])
+            ->orderBy('name')
+            ->get([
+                'name',
+                'email',
+                DB::raw("COALESCE(NULLIF(contact, ''), NULLIF(phone, '')) as phone"),
+            ]);
+
+        return ApiResponse::success(['librarians' => $librarians]);
+    }
+
     public function update(LegacyEndpointRequest $request): JsonResponse
     {
         $settings = array_intersect_key($request->input('settings', []), array_flip(self::ALLOWED_SETTINGS));

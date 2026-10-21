@@ -126,6 +126,42 @@ class DatabaseBackedApiTest extends TestCase
         }
     }
 
+    public function test_authenticated_users_can_fetch_registered_librarian_contacts(): void
+    {
+        $librarian = $this->createUser(
+            'contact-librarian-' . bin2hex(random_bytes(4)) . '@example.test',
+            'Librarian',
+        );
+        $librarian->forceFill(['name' => 'Library Contact', 'contact' => '01700000000']);
+        $librarian->save();
+
+        $student = $this->createUser(
+            'contact-student-' . bin2hex(random_bytes(4)) . '@example.test',
+            'Student',
+        );
+
+        $director = $this->createUser(
+            'contact-director-' . bin2hex(random_bytes(4)) . '@example.test',
+            'Director',
+        );
+        $token = app(ApiTokenService::class)->issue($director);
+
+        try {
+            $this->withHeader('Authorization', 'Bearer ' . $token)
+                ->getJson('/api/v1/librarians/contact')
+                ->assertOk()
+                ->assertJsonPath('success', true)
+                ->assertJsonFragment([
+                    'name' => 'Library Contact',
+                    'email' => $librarian->email,
+                    'phone' => '01700000000',
+                ])
+                ->assertJsonMissing(['email' => $student->email]);
+        } finally {
+            app(ApiTokenService::class)->revokeAll($director);
+        }
+    }
+
     public function test_all_report_types_return_json_without_legacy_dispatch(): void
     {
         $user = $this->createUser('reports-test-' . bin2hex(random_bytes(4)) . '@example.test', 'Librarian');
