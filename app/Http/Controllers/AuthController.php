@@ -350,23 +350,60 @@ class AuthController extends Controller
             return ApiResponse::error('Only JPEG, PNG, GIF, and WebP images are allowed.', 415);
         }
 
-        $directory = base_path('uploads/profiles');
-        if (!is_dir($directory) && !mkdir($directory, 0755, true) && !is_dir($directory)) {
-            return ApiResponse::error('Failed to save image.', 500);
+        $directory = $this->ensureUploadDirectory(base_path('uploads/profiles'));
+        if ($directory === null) {
+            return ApiResponse::error(
+                'The server cannot store profile images right now. Please contact the administrator.',
+                500,
+            );
         }
 
         $filename = bin2hex(random_bytes(16)) . '.' . $extension;
         try {
             $image->move($directory, $filename);
         } catch (\Throwable $e) {
-            return ApiResponse::error('Failed to save image.', 500);
+            \Illuminate\Support\Facades\Log::error('Profile image move failed.', [
+                'directory' => $directory,
+                'error' => $e->getMessage(),
+            ]);
+
+            return ApiResponse::error('Failed to save image on the server.', 500);
         }
-        $path = 'uploads/profiles/' . $filename;
-        $request->user()->forceFill(['profile_image' => $path])->save();
+
+        $relativePath = 'uploads/profiles/' . $filename;
+        $request->user()->forceFill(['profile_image' => $relativePath])->save();
 
         return ApiResponse::success([
-            'image_url' => '/api/v1/auth/image?path=' . urlencode($path),
+            'image_url' => '/api/v1/auth/image?path=' . urlencode($relativePath),
         ], 200, 'Profile image uploaded successfully.');
+    }
+
+    /**
+     * Create the upload directory when missing. Returns null when the server
+     * cannot write to it so the caller can answer with a clear JSON error
+     * instead of a generic 500 page.
+     */
+    private function ensureUploadDirectory(string $directory): ?string
+    {
+        if (is_dir($directory)) {
+            return is_writable($directory) ? $directory : null;
+        }
+
+        try {
+            @mkdir($directory, 0775, true);
+        } catch (\Throwable $e) {
+            // Reported below.
+        }
+
+        if (!is_dir($directory)) {
+            \Illuminate\Support\Facades\Log::error('Upload directory could not be created.', [
+                'directory' => $directory,
+            ]);
+
+            return null;
+        }
+
+        return is_writable($directory) ? $directory : null;
     }
 
     public function getImage(LegacyEndpointRequest $request): \Symfony\Component\HttpFoundation\BinaryFileResponse|JsonResponse
