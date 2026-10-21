@@ -134,8 +134,9 @@ class AuthController extends Controller
     {
         $user = $request->user();
         $data = $user->only(['email', 'name', 'role', 'created_at', 'last_login']);
-        $data['phone'] = $user->contact ?: 'Not provided';
-        $data['contact'] = $user->contact ?: '';
+        $contact = trim((string) ($user->contact ?: $user->phone ?: ''));
+        $data['phone'] = $contact !== '' ? $contact : 'Not provided';
+        $data['contact'] = $contact;
         $data['profile_image'] = $user->profile_image
             ? '/api/v1/auth/image?path=' . urlencode($user->profile_image)
             : null;
@@ -158,8 +159,10 @@ class AuthController extends Controller
         if ($request->filled('name')) {
             $updates['name'] = trim($request->string('name')->toString());
         }
-        if ($request->filled('phone')) {
-            $updates['contact'] = trim($request->string('phone')->toString());
+        if ($request->filled('phone') || $request->filled('contact')) {
+            $contact = trim((string) ($request->input('phone') ?? $request->input('contact')));
+            $updates['contact'] = $contact;
+            $updates['phone'] = $contact;
         }
         if ($updates === []) {
             return ApiResponse::error('No fields to update.', 400);
@@ -169,8 +172,8 @@ class AuthController extends Controller
         return ApiResponse::success(['user' => [
             'email' => $user->email,
             'name' => $user->name,
-            'phone' => $user->contact,
-            'contact' => $user->contact,
+            'phone' => $user->contact ?: $user->phone ?: 'Not provided',
+            'contact' => $user->contact ?: $user->phone ?: '',
             'role' => $user->role,
         ]], 200, 'Profile updated successfully.');
     }
@@ -329,8 +332,12 @@ class AuthController extends Controller
 
     public function uploadProfileImage(LegacyEndpointRequest $request): JsonResponse
     {
-        /** @var UploadedFile $image */
+        /** @var UploadedFile|null $image */
         $image = $request->file('image');
+        if (!$image || !$image->isValid()) {
+            return ApiResponse::error('Please choose a valid image to upload.', 400);
+        }
+
         $mime = $image->getMimeType();
         $extension = match ($mime) {
             'image/jpeg' => 'jpg',
@@ -349,7 +356,11 @@ class AuthController extends Controller
         }
 
         $filename = bin2hex(random_bytes(16)) . '.' . $extension;
-        $image->move($directory, $filename);
+        try {
+            $image->move($directory, $filename);
+        } catch (\Throwable $e) {
+            return ApiResponse::error('Failed to save image.', 500);
+        }
         $path = 'uploads/profiles/' . $filename;
         $request->user()->forceFill(['profile_image' => $path])->save();
 

@@ -374,17 +374,53 @@ class LibrarianController extends Controller
         if ($request->isMethod('GET')) {
             return ApiResponse::success(['shelves' => DB::table('Shelves')->where('is_deleted', false)->orderBy('shelf_id')->get()]);
         }
-        $shelfId = $request->integer('shelf_id');
+
+        $compartment = $request->integer('compartment');
+        $subcompartment = $request->integer('subcompartment');
+        $shelfId = $request->filled('shelf_id') ? $request->integer('shelf_id') : null;
+
         if ($request->isMethod('POST')) {
-            DB::table('Shelves')->insert(['shelf_id' => $shelfId, 'compartment' => $request->integer('compartment'), 'subcompartment' => $request->integer('subcompartment'), 'is_deleted' => false]);
-            return ApiResponse::success(['shelf_id' => $shelfId, 'compartment' => $request->integer('compartment'), 'subcompartment' => $request->integer('subcompartment')], 200, 'Shelf location added successfully');
+            if ($shelfId !== null && DB::table('Shelves')->where('shelf_id', $shelfId)->exists()) {
+                return ApiResponse::error(
+                    "Shelf {$shelfId} already exists. Choose a different shelf number.",
+                    400,
+                );
+            }
+
+            try {
+                $values = [
+                    'compartment' => $compartment,
+                    'subcompartment' => $subcompartment,
+                    'is_deleted' => false,
+                ];
+                if ($shelfId !== null) {
+                    $values['shelf_id'] = $shelfId;
+                }
+
+                $newShelfId = (int) DB::table('Shelves')->insertGetId($values, 'shelf_id');
+            } catch (\Throwable $e) {
+                return ApiResponse::error('Could not add the shelf. Please try again.', 400);
+            }
+
+            return ApiResponse::success([
+                'shelf_id' => $newShelfId,
+                'compartment' => $compartment,
+                'subcompartment' => $subcompartment,
+            ], 200, 'Shelf location added successfully');
         }
+
+        if ($shelfId === null) {
+            return ApiResponse::error('Shelf not found.', 404);
+        }
+
         if ($request->isMethod('PUT')) {
-            $updated = DB::table('Shelves')->where('shelf_id', $shelfId)->where('is_deleted', false)->update(['compartment' => $request->integer('compartment'), 'subcompartment' => $request->integer('subcompartment')]);
+            $updated = DB::table('Shelves')->where('shelf_id', $shelfId)->where('is_deleted', false)->update(['compartment' => $compartment, 'subcompartment' => $subcompartment]);
             if (!$updated && !DB::table('Shelves')->where('shelf_id', $shelfId)->exists()) return ApiResponse::error('Shelf not found.', 404);
             return ApiResponse::success([], 200, 'Shelf location updated successfully');
         }
-        DB::table('Shelves')->where('shelf_id', $shelfId)->update(['is_deleted' => true]);
+
+        $deleted = DB::table('Shelves')->where('shelf_id', $shelfId)->update(['is_deleted' => true]);
+        if (!$deleted) return ApiResponse::error('Shelf not found.', 404);
         return ApiResponse::success([], 200, 'Shelf deleted successfully');
     }
 

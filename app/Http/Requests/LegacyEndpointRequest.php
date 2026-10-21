@@ -47,7 +47,7 @@ class LegacyEndpointRequest extends ApiFormRequest
             'v1/auth/notifications/read' => ['user_email' => ['required', 'email'], 'notification_id' => ['required_without:mark_all', 'integer', 'min:1'], 'mark_all' => ['nullable', 'boolean']],
             'v1/auth/notifications/delete' => ['user_email' => ['required', 'email'], 'notification_id' => ['required', 'integer', 'min:1']],
             'v1/auth/image', 'v1/images' => ['path' => ['required', 'string']],
-            'v1/auth/profile/image' => ['email' => ['required', 'email'], 'image' => ['required', 'file', 'mimes:jpg,jpeg,png,gif,webp', 'extensions:jpg,jpeg,png,gif,webp', 'max:5120']],
+            'v1/auth/profile/image' => ['email' => ['required', 'email'], 'image' => ['required', 'file', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120']],
 
             // Books
             'v1/books/create' => ['title' => ['required', 'string'], 'author' => ['required', 'string'], 'isbn' => ['required', 'string'], 'copies_total' => ['nullable', 'integer', 'min:0'], 'image' => ['nullable', 'file', 'mimes:jpg,jpeg,png,gif,webp', 'extensions:jpg,jpeg,png,gif,webp', 'max:5120']],
@@ -135,7 +135,7 @@ class LegacyEndpointRequest extends ApiFormRequest
         }
 
         return [
-            'shelf_id' => ['required', 'integer', 'min:1'],
+            'shelf_id' => ['nullable', 'integer', 'min:1'],
             'compartment' => ['required', 'integer', 'min:1'],
             'subcompartment' => ['required', 'integer', 'min:1'],
         ];
