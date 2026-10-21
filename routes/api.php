@@ -109,6 +109,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/librarian/requests/sync', [LibrarianController::class, 'syncStatus']);
         Route::get('/librarian/transactions', [LibrarianController::class, 'transactionHistory']);
         Route::match(['GET', 'POST', 'PUT', 'DELETE'], '/librarian/shelves', [LibrarianController::class, 'shelves']);
+        Route::get('/librarian/preregistrations', [LibrarianController::class, 'listPreRegistrations']);
         Route::post('/librarian/preregistrations', [LibrarianController::class, 'addPreRegistration']);
         Route::post('/librarian/preregistrations/import', [LibrarianController::class, 'importPreRegistrations']);
     });

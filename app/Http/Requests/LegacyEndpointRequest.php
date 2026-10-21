@@ -81,6 +81,12 @@ class LegacyEndpointRequest extends ApiFormRequest
             'v1/librarian/return-requests/approve' => ['transaction_id' => ['required', 'integer', 'min:1']],
             'v1/librarian/borrow-requests/reject' => ['request_id' => ['required', 'integer', 'min:1']],
             'v1/librarian/requests' => ['type' => ['nullable', 'in:borrow,return,reserve,addition'], 'search' => ['nullable', 'string']],
+            'v1/librarian/preregistrations' => [
+                'role' => ['nullable', 'in:Student,Teacher,Librarian,Director'],
+                'search' => ['nullable', 'string', 'max:150'],
+                'all' => ['nullable', 'boolean'],
+                'limit' => ['nullable', 'integer', 'min:1', 'max:500'],
+            ],
 
             // Payments
             'v1/payments/fines', 'v1/payments/history' => ['user_email' => ['nullable', 'email'], 'email' => ['nullable', 'email'], 'startDate' => ['nullable', 'date'], 'endDate' => ['nullable', 'date']],

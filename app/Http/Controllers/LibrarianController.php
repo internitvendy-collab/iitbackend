@@ -100,6 +100,67 @@ class LibrarianController extends Controller
         ]);
     }
 
+    public function listPreRegistrations(LegacyEndpointRequest $request): JsonResponse
+    {
+        $role = ucfirst(strtolower(trim((string) $request->input('role', 'Student'))));
+        $tableByRole = [
+            'Student' => 'prereg_students',
+            'Teacher' => 'prereg_teachers',
+            'Librarian' => 'prereg_librarians',
+            'Director' => 'prereg_directors',
+        ];
+
+        $all = $request->boolean('all');
+        $search = trim((string) $request->input('search', ''));
+        $limit = min(500, max(1, (int) $request->input('limit', 200)));
+
+        $roles = $all ? $tableByRole : array_intersect_key($tableByRole, [$role => true]);
+        if ($roles === []) {
+            return ApiResponse::error('Select a valid pre-registration role.', 422);
+        }
+
+        $items = [];
+        $counts = [];
+
+        foreach ($tableByRole as $tableRole => $table) {
+            $counts[$tableRole] = DB::table($table)->count();
+        }
+
+        foreach ($roles as $tableRole => $table) {
+            $query = DB::table($table);
+
+            if ($search !== '') {
+                $searchColumns = ['email', 'full_name', 'contact'];
+                if ($tableRole === 'Student') {
+                    $searchColumns[] = 'roll';
+                }
+                if ($tableRole === 'Teacher') {
+                    $searchColumns[] = 'designation';
+                }
+                $query->where(function ($q) use ($search, $searchColumns): void {
+                    foreach ($searchColumns as $column) {
+                        $q->orWhere($column, 'like', "%{$search}%");
+                    }
+                });
+            }
+
+            $rows = $query->orderBy('full_name')->limit($limit)->get();
+
+            foreach ($rows as $row) {
+                $items[] = array_merge((array) $row, ['role' => $tableRole]);
+            }
+        }
+
+        usort($items, static fn ($a, $b) => strcmp((string) ($a['full_name'] ?? ''), (string) ($b['full_name'] ?? '')));
+
+        return ApiResponse::success([
+            'role' => $role,
+            'count' => count($items),
+            'counts_by_role' => $counts,
+            'items' => array_slice($items, 0, $limit),
+        ]);
+    }
+
     public function importPreRegistrations(Request $request): JsonResponse
     {
         $file = $request->file('file');
