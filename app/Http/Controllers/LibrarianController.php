@@ -112,6 +112,7 @@ class LibrarianController extends Controller
 
         $all = $request->boolean('all');
         $search = trim((string) $request->input('search', ''));
+        $statusFilter = strtolower(trim((string) $request->input('status', 'all')));
         $limit = min(500, max(1, (int) $request->input('limit', 200)));
 
         $roles = $all ? $tableByRole : array_intersect_key($tableByRole, [$role => true]);
@@ -119,14 +120,30 @@ class LibrarianController extends Controller
             return ApiResponse::error('Select a valid pre-registration role.', 422);
         }
 
+        // Real accounts already living in Users, keyed by lower(email).
+        $registeredByRole = [];
+        foreach ($tableByRole as $tableRole => $unused) {
+            $registeredByRole[$tableRole] = DB::table('Users')
+                ->whereRaw('LOWER(role) = ?', [strtolower($tableRole)])
+                ->get(['email', 'name', 'role', 'contact', 'phone', 'created_at'])
+                ->keyBy(static fn ($row) => strtolower((string) $row->email));
+        }
+
         $items = [];
         $counts = [];
+        $pendingCounts = [];
 
         foreach ($tableByRole as $tableRole => $table) {
-            $counts[$tableRole] = DB::table($table)->count();
+            $counts[$tableRole] = DB::table($table)->count() + $registeredByRole[$tableRole]->count();
+            $pendingCounts[$tableRole] = (clone DB::table($table))
+                ->whereNotIn(DB::raw('LOWER(email)'), $registeredByRole[$tableRole]->keys()->all() ?: [''])
+                ->count();
         }
 
         foreach ($roles as $tableRole => $table) {
+            $registered = $registeredByRole[$tableRole];
+            $seen = [];
+
             $query = DB::table($table);
 
             if ($search !== '') {
@@ -144,10 +161,48 @@ class LibrarianController extends Controller
                 });
             }
 
-            $rows = $query->orderBy('full_name')->limit($limit)->get();
+            foreach ($query->orderBy('full_name')->limit($limit)->get() as $row) {
+                $key = strtolower((string) $row->email);
+                $seen[$key] = true;
+                $isRegistered = $registered->has($key);
 
-            foreach ($rows as $row) {
-                $items[] = array_merge((array) $row, ['role' => $tableRole]);
+                if ($statusFilter === 'pending' && $isRegistered) continue;
+                if ($statusFilter === 'registered' && !$isRegistered) continue;
+
+                $items[] = array_merge((array) $row, [
+                    'role' => $tableRole,
+                    'status' => $isRegistered ? 'registered' : 'pending',
+                    'source' => 'preregistration',
+                ]);
+            }
+
+            // Accounts that were created directly (seeders, manual inserts) and
+            // never went through the pre-registration list.
+            foreach ($registered as $key => $user) {
+                if (isset($seen[$key])) continue;
+                if ($statusFilter === 'pending') continue;
+
+                if ($search !== '') {
+                    $haystack = strtolower(implode(' ', [
+                        (string) $user->email,
+                        (string) $user->name,
+                        (string) $user->contact,
+                        (string) $user->phone,
+                    ]));
+                    if (!str_contains($haystack, strtolower($search))) continue;
+                }
+
+                $items[] = [
+                    'email' => $user->email,
+                    'full_name' => $user->name,
+                    'contact' => $user->contact ?: $user->phone,
+                    'roll' => null,
+                    'session' => null,
+                    'designation' => null,
+                    'role' => $tableRole,
+                    'status' => 'registered',
+                    'source' => 'users',
+                ];
             }
         }
 
@@ -157,6 +212,7 @@ class LibrarianController extends Controller
             'role' => $role,
             'count' => count($items),
             'counts_by_role' => $counts,
+            'pending_by_role' => $pendingCounts,
             'items' => array_slice($items, 0, $limit),
         ]);
     }

@@ -84,6 +84,7 @@ class LegacyEndpointRequest extends ApiFormRequest
             'v1/librarian/preregistrations' => [
                 'role' => ['nullable', 'in:Student,Teacher,Librarian,Director'],
                 'search' => ['nullable', 'string', 'max:150'],
+                'status' => ['nullable', 'in:all,pending,registered'],
                 'all' => ['nullable', 'boolean'],
                 'limit' => ['nullable', 'integer', 'min:1', 'max:500'],
             ],
